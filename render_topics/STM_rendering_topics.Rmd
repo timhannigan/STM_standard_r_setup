@@ -1,0 +1,384 @@
+---
+title: 'IDeaS Standard Notebook for STM Rendering'
+output:
+    pdf_document: default
+  html_notebook: default
+editor_options:
+  chunk_output_type: console
+  markdown: 
+    wrap: sentence
+---
+
+# Structural Topic Modeling - STM Rendering - Template Notebook
+
+### Maintained by Tim Hannigan, and the IDeaS Group 2022
+
+This notebook assumes that some basic pre-processing has been done already. The required input is a csv file entitled "corpus_processed_for_STM.csv". This will contain the meta data (and will likely have been produced using the Python Jupyter notebook inside the render_corpus directory). This also assumes that there will be a column called "documents" that contains the text data and an index variable called "X".
+
+The design of this notebook is to serve as a standard template to start a rendering process from. This code was inspired by Lindstedt (2019) and work by Tim Hannigan.
+
+### Set up libraries
+
+This notebook is presuming these libraries have been installed.
+
+```{r}
+# Structural topic modeling package 
+library(stm)
+
+# Network analysis and visualization package 
+library(igraph)
+
+# note: this is important to ensure that we're using the latest version of 
+# LDAVis, with the working version of topic order
+#devtools::install_github("cpsievert/LDAvis") 
+library(LDAvis)
+
+library(ggplot2)
+
+library(stminsights)
+```
+
+### PREPROCESSING
+
+Some basic pre-processing has been done already using the Python Jupyter notebook. We'll attempt to use Quanteda and the standard STM functions to ensure that we can effectively use the covariates in the model.
+
+We'll attempt to use the standard stm functions to ensure that we can effectively use the covariates in the model. These procedures will covert to lower case, remove punctuation, remove stopwords, remove numbers, and strip html.
+
+### Load Corpus as CSV
+
+```{r}
+
+# Read csv formatted data 
+data <- read.csv("corpus_processed_for_STM.csv") 
+
+# any custom code for further processing the documents column
+#data$documents <- gsub(pattern = "\n", replacement = " ", x = data$documents)
+#
+
+data <- dfm(data, stem = FALSE, remove = stopwords('english'),
+           remove_punct = TRUE) %>% dfm_trim(min_count = 2)
+out <- convert(data, to = 'stm')
+
+```
+
+### MODEL SELECTION
+
+Recall the guidance on model selection in STM.
+
+From Lindstedt (2019:311): "For shorter, focused corpora (i.e., those ranging from a few hundred to a few thousand documents in size), an initial choice between five and 50 topics is best, whereas for larger, unfocused corpora (i.e., those ranging from tens of thousands to hundreds of thousands of documents in size or larger), previous research has found that between 60 and 100 topics are best (Roberts et al. 2018)."
+
+This is also where we set which covariates we want in the model.
+
+```{r}
+set.seed(02138)
+start.time <- Sys.time()
+set.seed(02138)
+K_ <- c(10,15,20,25,30,35,40,45,50) # set the range here
+
+# consider including the covariates here, i.e. prevalence =~ months_since_origin + political_leaning 
+# also note the number of cores you have available on your machine and set it here as a parameter cores=27
+kResult <- searchK(out$documents, out$vocab, K = K_, init.type = "Spectral", data = out$meta, verbose=FALSE)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken # this will tell you how long this procedure took to run
+save(kResult, file = "rendering_artifacts/kResult.RData") # save results
+
+```
+
+#### Plot diagnostic results using built-in STM function, then save as PDF file
+
+```{r}
+set.seed(02138)
+# first, save to file
+pdf(file ="rendering_artifacts/kResult.pdf", width=10, height=8.5)
+print(plot(kResult, cex=.25)) # note: importance of wrapping it here, so PDF file isn't corrupted
+dev.off()
+
+# then replot for on-screen use in RStudio
+plot(kResult) 
+```
+
+#### Plot Semantic coherence-exclusivity plot using function plot()
+
+This is where we're looking for a model specification that corresponds with the coherence-exclusivity frontier. Essentially, we're looking for a model that jointly maximizes Exclusivity and Semantic Coherence.
+
+From Lindstedt (2019: 311):
+
+"A secondary, less subjective, recommendation involves examining diagnostic tables and plots of semantic coherence and exclusivity calculations. Semantic coherence is a measure of the probability for a set of topic words to cooccur within the same document. Exclusivity is a measure of the probability for a word to fall primarily within the top rankings of a single topic. Model selection for the number of topics is made along the semantic coherence exclusivity "frontier" where no model is dominated by either metric (Roberts et al. 2014)."
+
+However, the ultimate decision is comes down to human validation and interpretation.
+
+"Given the difficulties associated with model selection and the trade-off between predictive and interpretative models, the ultimate responsibility for model selection rests with the researcher and their informed judgment. Therefore, it is on the researcher to "validate, validate, validate" their results (Grimmer and Stewart 2013:5). This process can be done in a number of ways, but the most useful means of validation in the stm R package is its built-in function that provides a list of the most representative documents for a particular topic."
+
+```{r}
+set.seed(02138)
+pdf(file ="rendering_artifacts/coherence-exclusivity.pdf", width=10, height=8.5)
+plot(kResult$results$semcoh, kResult$results$exclus, xlab = "Semantic Coherence", ylab = "Exclusivity")
+# Add labels to semantic coherence-exclusivity plot using function text() 
+text(kResult$results$semcoh, kResult$results$exclus, labels = paste("K", kResult$results$K), pos = 1)
+dev.off()
+
+# then replot for on-screen use in RStudio
+plot(kResult$results$semcoh, kResult$results$exclus, xlab = "Semantic Coherence", ylab = "Exclusivity")
+# Add labels to semantic coherence-exclusivity plot using function text() 
+text(kResult$results$semcoh, kResult$results$exclus, labels = paste("K", kResult$results$K), pos = 1)
+```
+
+### MODELING: working with a specification
+
+This list of covariates should match the searchK formula above, i.e. prevalence =\~ months_since_origin + political_leaning
+
+```{r}
+i <- 25 # this is where we set the topic specification
+set.seed(02138)
+# Specification for K topics using function stm() 
+model <- stm(out$documents, out$vocab, K = i, max.em.its = 150, data = out$meta, init.type = "Spectral", verbose=FALSE)
+
+```
+
+Save model to file
+
+```{r}
+save(model, file = sprintf("rendering_artifacts/stm_fit_%s_topics.RData", i) )
+```
+
+# Check features on model
+
+This is being saved from a dataframe to a csv file. You can open this up in Excel for easier usage.
+
+```{r}
+set.seed(02138)
+topics <- labelTopics(model, n=10) # setting the top 10 words 
+topics <- data.frame("features" = t(topics$frex)) # using FREX
+colnames(topics) <- paste("Topics", c(1:i))
+write.csv(topics, sprintf("rendering_artifacts/topic_labels_K%s.csv", i), row.names = TRUE) 
+
+```
+
+# Further Inspection of Validated TModel
+
+```{r}
+set.seed(02138)
+
+pdf(file =sprintf("rendering_artifacts/expected_topic_proportions_K%s.pdf", i), width=20, height=20)
+print(plot(model, cex=.05)) # note: importance of wrapping it here, so PDF file isn't corrupted
+dev.off()
+
+# then replot for on-screen use in RStudio
+plot(model, cex=.05)
+
+```
+
+# Inspection of model using LDAVis
+
+```{r}
+set.seed(02138)
+toLDAvis(model, out$documents, 30, reorder.topics=FALSE, out.dir="rendering_artifacts/ldavis/")     
+
+# open terminal, type `cd ldavis && python3 -m http.server 8000`
+# then open http://localhost:8000 in your web browser
+
+```
+
+# Prepare Topic correlations using function topicCorr()
+
+Note the cutoff threshold parameter here. See manual for more details.
+
+```{r}
+set.seed(02138)
+mod.out.coor <- topicCorr(model, method = "simple" , cutoff = 0.01)
+```
+
+# Covariate effects using function estimateEffect()
+
+```{r}
+set.seed(02138)
+#covariates_est <- estimateEffect(~ months_since_origin + political_leaning, model, uncertainty = "None", metadata = out$meta) 
+```
+
+# Covariate effects summary using function summary()
+
+Will print all topics. Can also set topic=i for more specific output.
+
+```{r}
+#summary(covariates_est) 
+```
+
+# POST-ESTIMATION DIAGNOSTICS
+
+```{r}
+# Model summary using function summary() 
+summary(model)
+```
+
+### Find prototype documents using function findThoughts(); in this case listing titles, but can also use out$meta$documents
+
+```{r}
+set.seed(02138)
+j <- 4
+findThoughts(model, texts = out$meta$title, topics = j, n = 4) 
+
+# can also wrap this in a plot
+
+thoughts_topic<-findThoughts(model, texts = out$meta$title, topics = j, n = 4) 
+
+pdf(sprintf("artifacts_for_rendering/topic_%s_sample_docs.pdf", j), width=10, height=8.5)
+plotQuote(thoughts_topic, width = 225, text.cex = .5, maxwidth = 1500)
+dev.off()
+
+# then replot for on-screen use in RStudio
+plotQuote(thoughts_topic, width = 225, text.cex = .5, maxwidth = 1500)
+
+```
+
+### Plot wordcloud for topic
+
+```{r}
+
+set.seed(02138)
+cloud(model, topic=j, scale=c(2,.25))
+
+pdf(sprintf("artifacts_for_rendering/topic_%s_word_cloud.pdf", j), width=5, height=5)
+cloud(model, topic=j, scale=c(2,.25))
+dev.off()
+
+# then replot for on-screen use in RStudio
+cloud(model, topic=j, scale=c(2,.25))
+```
+
+### Generating rendering artifacts for all topics (in a loop)
+
+```{r}
+for (j in 1:i){
+  set.seed(02138)
+  thoughts_topic<- findThoughts(model, texts = out$meta$documents,
+                                n = 4, topics = j)
+  pdf(sprintf("artifacts_for_rendering/topic_artifacts/topic_%s_sample_docs.pdf", j), width=10, height=8.5)
+  plotQuote(thoughts_topic, width = 225, text.cex = .5, maxwidth = 1500)
+  dev.off()
+  
+  # project the words in a topic
+  set.seed(02138)
+  pdf(sprintf("artifacts_for_rendering/topic_artifacts/topic_%s_word_cloud.pdf", j), width=5, height=5)
+  cloud(model, topic=j, scale=c(2,.25))
+  dev.off()
+
+}
+```
+
+### Extract the topic document matrix (gamma):
+
+```{r}
+td_gamma <- tidy(model, matrix = "gamma",
+                 document_names = data$X)
+
+# need to convert from long to wide form (following the spread function: http://www.cookbook-r.com/Manipulating_data/Converting_data_between_wide_and_long_format/)
+td_gamma_wide <- spread(td_gamma, topic, gamma)
+td_gamma_wide
+
+# process this further (i.e. in Python)
+write.csv(td_gamma_wide, 'artifacts_for_rendering/topic_document_matrix/topic_document_matrix.csv')
+ 
+```
+
+# RESULTS
+
+### Set the topic names to your relevant specification (fill in the custom labels here).
+
+```{r}
+topic_names <- c("TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:")
+```
+
+### Plot model results using function plot()
+
+```{r}
+set.seed(02138)
+plot(model, type = "summary", labeltype = "frex", xlim = c(0,.20),
+     topic.names = topic_names)
+
+```
+
+### Plot topic correlation graph using function plot()
+
+Set the topic names to your relevant specification (fill in the custom labels here).
+
+```{r}
+set.seed(02138)
+plot(mod.out.coor, vlabels = c(topic.names = topic_names))
+```
+
+### Plot covariate estimates using function plot()
+
+```{r}
+set.seed(02138)
+#plot(covariates_est, "months_since_origin", method="continuous", topics=c(20), xlim=c(1,15), xlab = "months_since_origin", labeltype = "custom", custom.labels = c("T20:"))
+
+```
+
+### Topic contrasts
+
+```{r}
+
+###
+#by covariate Y
+###
+j <- 2
+pdf(sprintf("artifacts_for_rendering/topic_artifacts/topic_%s_by_Y", j), width=10, height=8.5)
+
+plot(predict_topics, covariate = "Y", topics = c(j),
+     model = model_40, method = "difference",
+     cov.value1 = "value_1",
+     cov.value2 = "value_2",
+     xlab = "More value_2 ... More value_1",
+     main = "Topic distributions by Y",
+     xlim = c(-.5, .5),
+     labeltype = "custom",
+     custom.labels = c(springf('Topic %s', j)))
+
+dev.off()
+
+```
+
+### Interactions
+
+Note the following from the STM vignette (<https://cran.r-project.org/web/packages/stm/vignettes/stmVignette.pdf>): "We have chosen to enter the day variable here linearly for simplicity; however, we note that you can use the software to estimate interactions with non-linear variables such as splines. However, plot.estimateEffect only supports interactions with at least one binary effect modification covariate."
+
+```{r}
+set.seed(02138)
+
+model_interactions <-  stm(out$documents, out$vocab, K = i, max.em.its = 150, data = out$meta, init.type = "Spectral", prevalence =~ rating * day, verbose=FALSE)
+
+prep <- estimateEffect(c(20) ~ rating * day, model_interactions,  metadata = out$meta, uncertainty = "None")
+
+plot(prep, covariate= "months_since_origin", method = "continuous", 
+     model = model_interactions, printlegend = FALSE, xaxt = "n", xlab = "Time", main = "Topic 14",
+     moderator="Y", moderator.value="value_1", linecol="red", ylim = c(-1,1), )
+
+plot(prep, covariate="months_since_origin", method = "continuous", 
+     model = model_interactions, printlegend = FALSE, xaxt = "n", xlab = "Time",
+     moderator="Y", moderator.value="value_2", linecol="blue", add=T)
+
+```
+
+### Run interactive application using stminsights
+
+```{r}
+run_stminsights()
+
+```
+
+
+
+
+
+### CLEAN UP
+
+```{r}
+rm(data) 
+rm(out) 
+rm(model) 
+rm(processed) 
+rm(kResult) 
+rm(mod.out.coor) 
+rm(month_est) 
+```
