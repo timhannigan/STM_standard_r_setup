@@ -373,7 +373,9 @@ plot(prep, covariate="months_since_origin", method = "continuous",
 ```
 
 ### CLEAN UP
+
 Strictly speaking, it is not necessary to run this code-block, but it can help keep your R Environment clean.
+
 ```{r}
 rm(data) 
 rm(out) 
