@@ -28,19 +28,19 @@ library(stm)
 # Network analysis and visualization package 
 library(igraph)
 
-# note: this is important to ensure that we're using the latest version of 
-# LDAVis, with the working version of topic order
-#devtools::install_github("cpsievert/LDAvis") 
+# topic model LDAvis visualization
 library(LDAvis)
 
+# ggplot2 for visualizations
 library(ggplot2)
 
+# stminsights for interactive browsing of stm model
 library(stminsights)
 ```
 
 ### PREPROCESSING
 
-Some basic pre-processing has been done already using the Python Jupyter notebook. We'll attempt to use Quanteda and the standard STM functions to ensure that we can effectively use the covariates in the model.
+This notebook assumes some basic pre-processing has been done already (i.e. in Excel, or using the Python Jupyter notebook). We'll attempt to use the standard STM functions to ensure that we can effectively use the covariates in the model.
 
 We'll attempt to use the standard stm functions to ensure that we can effectively use the covariates in the model. These procedures will covert to lower case, remove punctuation, remove stopwords, remove numbers, and strip html.
 
@@ -67,7 +67,7 @@ Recall the guidance on model selection in STM.
 
 From Lindstedt (2019:311): "For shorter, focused corpora (i.e., those ranging from a few hundred to a few thousand documents in size), an initial choice between five and 50 topics is best, whereas for larger, unfocused corpora (i.e., those ranging from tens of thousands to hundreds of thousands of documents in size or larger), previous research has found that between 60 and 100 topics are best (Roberts et al. 2018)."
 
-This is also where we set which covariates we want in the model.
+This is also where we set which covariates we want in the model. Recall that the values for the covariates are setup in the source dataframe ahead of time (before using this notebook in R).
 
 ```{r}
 set.seed(02138)
@@ -76,6 +76,7 @@ set.seed(02138)
 K_ <- c(10,15,20,25,30,35,40,45,50) # set the range here
 
 # consider including the covariates here, i.e. prevalence =~ months_since_origin + political_leaning 
+
 # also note the number of cores you have available on your machine and set it here as a parameter cores=27
 kResult <- searchK(out$documents, out$vocab, K = K_, init.type = "Spectral", data = out$meta, verbose=FALSE)
 end.time <- Sys.time()
@@ -142,6 +143,15 @@ Save model to file
 save(model, file = sprintf("rendering_artifacts/stm_fit_%s_topics.RData", i) )
 ```
 
+### Run interactive application using stminsights
+
+This can help you to interactively browse the topic model.
+
+```{r}
+run_stminsights()
+
+```
+
 # Check features on model
 
 This is being saved from a dataframe to a csv file. You can open this up in Excel for easier usage.
@@ -169,7 +179,7 @@ plot(model, cex=.05)
 
 ```
 
-# Inspection of model using LDAVis
+### Inspection of model using LDAVis
 
 ```{r}
 set.seed(02138)
@@ -180,7 +190,7 @@ toLDAvis(model, out$documents, 30, reorder.topics=FALSE, out.dir="rendering_arti
 
 ```
 
-# Prepare Topic correlations using function topicCorr()
+### Prepare Topic correlations using function topicCorr()
 
 Note the cutoff threshold parameter here. See manual for more details.
 
@@ -196,7 +206,7 @@ set.seed(02138)
 #covariates_est <- estimateEffect(~ months_since_origin + political_leaning, model, uncertainty = "None", metadata = out$meta) 
 ```
 
-# Covariate effects summary using function summary()
+### Covariate effects summary using function summary()
 
 Will print all topics. Can also set topic=i for more specific output.
 
@@ -212,6 +222,8 @@ summary(model)
 ```
 
 ### Find prototype documents using function findThoughts(); in this case listing titles, but can also use out$meta$documents
+
+Note, this duplicates the functionality in stminsights.
 
 ```{r}
 set.seed(02138)
@@ -360,19 +372,8 @@ plot(prep, covariate="months_since_origin", method = "continuous",
 
 ```
 
-### Run interactive application using stminsights
-
-```{r}
-run_stminsights()
-
-```
-
-
-
-
-
 ### CLEAN UP
-
+Strictly speaking, it is not necessary to run this code-block, but it can help keep your R Environment clean.
 ```{r}
 rm(data) 
 rm(out) 
