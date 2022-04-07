@@ -84,12 +84,8 @@ start.time <- Sys.time()
 set.seed(02138)
 K_ <- c(10,15,20,25,30,35,40,45,50) # set the range here
 
-<<<<<<< HEAD
 # consider including the covariates here, i.e. prevalence =~ s(year)
-=======
-# consider including the covariates here, i.e. prevalence =~ months_since_origin + political_leaning 
 
->>>>>>> deafd8a31a55a57bd5eac2158418f0caac8f3175
 # also note the number of cores you have available on your machine and set it here as a parameter cores=27
 kResult <- searchK(out$documents, out$vocab, K = K_, prevalence =~ s(year), init.type = "Spectral", data = out$meta, verbose=FALSE)
 end.time <- Sys.time()
@@ -407,11 +403,6 @@ plot(prep, covariate="months_since_origin", method = "continuous",
 
 ```
 
-<<<<<<< HEAD
-
-
-=======
->>>>>>> deafd8a31a55a57bd5eac2158418f0caac8f3175
 ### CLEAN UP
 
 Strictly speaking, it is not necessary to run this code-block, but it can help keep your R Environment clean.
