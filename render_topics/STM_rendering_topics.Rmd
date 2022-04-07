@@ -28,14 +28,18 @@ library(stm)
 # Network analysis and visualization package 
 library(igraph)
 
-# note: this is important to ensure that we're using the latest version of 
-# LDAVis, with the working version of topic order
-#devtools::install_github("cpsievert/LDAvis") 
+# topic model LDAvis visualization
 library(LDAvis)
 
+# ggplot2 for visualizations
 library(ggplot2)
 
+# stminsights for interactive browsing of stm model
 library(stminsights)
+
+# helpful library
+library(tidytext)
+
 ```
 
 ### PREPROCESSING
@@ -47,6 +51,9 @@ We'll attempt to use the standard stm functions to ensure that we can effectivel
 ### Load Corpus as CSV
 
 ```{r}
+# this is relative to the RProj
+setwd("render_topics")
+
 
 # Read csv formatted data 
 data <- read.csv("corpus_processed_for_STM.csv") 
@@ -55,9 +62,11 @@ data <- read.csv("corpus_processed_for_STM.csv")
 #data$documents <- gsub(pattern = "\n", replacement = " ", x = data$documents)
 #
 
-data <- dfm(data, stem = FALSE, remove = stopwords('english'),
-           remove_punct = TRUE) %>% dfm_trim(min_count = 2)
-out <- convert(data, to = 'stm')
+# Process data using function textProcessor() 
+processed <- textProcessor(data$Document, metadata = data, stem = FALSE, striphtml= TRUE)
+
+# Prepare data using function prepDocuments() 
+out <- prepDocuments(processed$documents, processed$vocab, processed$meta, lower.thresh = 25)
 
 ```
 
@@ -75,9 +84,9 @@ start.time <- Sys.time()
 set.seed(02138)
 K_ <- c(10,15,20,25,30,35,40,45,50) # set the range here
 
-# consider including the covariates here, i.e. prevalence =~ months_since_origin + political_leaning 
+# consider including the covariates here, i.e. prevalence =~ s(year)
 # also note the number of cores you have available on your machine and set it here as a parameter cores=27
-kResult <- searchK(out$documents, out$vocab, K = K_, init.type = "Spectral", data = out$meta, verbose=FALSE)
+kResult <- searchK(out$documents, out$vocab, K = K_, prevalence =~ s(year), init.type = "Spectral", data = out$meta, verbose=FALSE)
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken # this will tell you how long this procedure took to run
@@ -126,19 +135,40 @@ text(kResult$results$semcoh, kResult$results$exclus, labels = paste("K", kResult
 
 ### MODELING: working with a specification
 
-This list of covariates should match the searchK formula above, i.e. prevalence =\~ months_since_origin + political_leaning
+This list of covariates should match the searchK formula above, i.e. prevalence =\~ s(year)
+
+Procedure: use stminsights to interactively browse a set of promising specifications. Save different specifications that best approximate the frontier, then browse in stminsights to validate.
+
+For example, if there is a set of models around K=25, create versions of them below. Then compare in stminsights.
 
 ```{r}
+
+
 i <- 25 # this is where we set the topic specification
 set.seed(02138)
 # Specification for K topics using function stm() 
-model <- stm(out$documents, out$vocab, K = i, max.em.its = 150, data = out$meta, init.type = "Spectral", verbose=FALSE)
+model_25 <- stm(out$documents, out$vocab, K = i, max.em.its = 150, data = out$meta, init.type = "Spectral", verbose=FALSE)
+year_est_25 <- estimateEffect(~ s(year), model_25, uncertainty = "None", metadata = out$meta) 
+
+# repeat the above block of code for other promising candidate models
+
+save.image("rendering_artifacts/stm_promising_models.RData")
+```
+
+
+### Run interactive application using stminsights
+
+This can help you to interactively browse the topic model.
+
+```{r}
+run_stminsights()
 
 ```
 
-Save model to file
+Once you decide on the optimal model, save it to to file
 
 ```{r}
+i <- 25 # you set this value to the optimal value you determined (above)
 save(model, file = sprintf("rendering_artifacts/stm_fit_%s_topics.RData", i) )
 ```
 
@@ -149,7 +179,7 @@ This is being saved from a dataframe to a csv file. You can open this up in Exce
 ```{r}
 set.seed(02138)
 topics <- labelTopics(model, n=10) # setting the top 10 words 
-topics <- data.frame("features" = t(topics$frex)) # using FREX
+topics <- data.frame("features" = t(topics$frex)) # using FREX, but can also use prob, lift
 colnames(topics) <- paste("Topics", c(1:i))
 write.csv(topics, sprintf("rendering_artifacts/topic_labels_K%s.csv", i), row.names = TRUE) 
 
@@ -193,7 +223,7 @@ mod.out.coor <- topicCorr(model, method = "simple" , cutoff = 0.01)
 
 ```{r}
 set.seed(02138)
-#covariates_est <- estimateEffect(~ months_since_origin + political_leaning, model, uncertainty = "None", metadata = out$meta) 
+#covariates_est <- estimateEffect(~ s(year), model, uncertainty = "None", metadata = out$meta) 
 ```
 
 # Covariate effects summary using function summary()
@@ -222,7 +252,7 @@ findThoughts(model, texts = out$meta$title, topics = j, n = 4)
 
 thoughts_topic<-findThoughts(model, texts = out$meta$title, topics = j, n = 4) 
 
-pdf(sprintf("artifacts_for_rendering/topic_%s_sample_docs.pdf", j), width=10, height=8.5)
+pdf(sprintf("rendering_artifacts/topic_%s_sample_docs.pdf", j), width=10, height=8.5)
 plotQuote(thoughts_topic, width = 225, text.cex = .5, maxwidth = 1500)
 dev.off()
 
@@ -238,7 +268,7 @@ plotQuote(thoughts_topic, width = 225, text.cex = .5, maxwidth = 1500)
 set.seed(02138)
 cloud(model, topic=j, scale=c(2,.25))
 
-pdf(sprintf("artifacts_for_rendering/topic_%s_word_cloud.pdf", j), width=5, height=5)
+pdf(sprintf("rendering_artifacts/topic_%s_word_cloud.pdf", j), width=5, height=5)
 cloud(model, topic=j, scale=c(2,.25))
 dev.off()
 
@@ -253,13 +283,13 @@ for (j in 1:i){
   set.seed(02138)
   thoughts_topic<- findThoughts(model, texts = out$meta$documents,
                                 n = 4, topics = j)
-  pdf(sprintf("artifacts_for_rendering/topic_artifacts/topic_%s_sample_docs.pdf", j), width=10, height=8.5)
+  pdf(sprintf("rendering_artifacts/topic_artifacts/topic_%s_sample_docs.pdf", j), width=10, height=8.5)
   plotQuote(thoughts_topic, width = 225, text.cex = .5, maxwidth = 1500)
   dev.off()
   
   # project the words in a topic
   set.seed(02138)
-  pdf(sprintf("artifacts_for_rendering/topic_artifacts/topic_%s_word_cloud.pdf", j), width=5, height=5)
+  pdf(sprintf("rendering_artifacts/topic_artifacts/topic_%s_word_cloud.pdf", j), width=5, height=5)
   cloud(model, topic=j, scale=c(2,.25))
   dev.off()
 
@@ -323,7 +353,7 @@ set.seed(02138)
 #by covariate Y
 ###
 j <- 2
-pdf(sprintf("artifacts_for_rendering/topic_artifacts/topic_%s_by_Y", j), width=10, height=8.5)
+pdf(sprintf("rendering_artifacts/topic_artifacts/topic_%s_by_Y", j), width=10, height=8.5)
 
 plot(predict_topics, covariate = "Y", topics = c(j),
      model = model_40, method = "difference",
