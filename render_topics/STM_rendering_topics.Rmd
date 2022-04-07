@@ -299,6 +299,7 @@ for (j in 1:i){
 ### Extract the topic document matrix (gamma):
 
 ```{r}
+# Using TidyText: https://rdrr.io/cran/tidytext/man/stm_tidiers.html
 td_gamma <- tidy(model, matrix = "gamma",
                  document_names = data$X)
 
@@ -389,15 +390,6 @@ plot(prep, covariate="months_since_origin", method = "continuous",
      moderator="Y", moderator.value="value_2", linecol="blue", add=T)
 
 ```
-
-### Run interactive application using stminsights
-
-```{r}
-run_stminsights()
-
-```
-
-
 
 
 
