@@ -9,9 +9,9 @@ editor_options:
     wrap: sentence
 ---
 
-# Structural Topic Modeling - STM Rendering - Template Notebook
+# Structural Topic Modeling - STM Rendering - Template Notebook IDeaS 
 
-### Maintained by Tim Hannigan, and the IDeaS Group 2022
+### Maintained by the IDeaS Group 2022
 
 This notebook assumes that some basic pre-processing has been done already. The required input is a csv file entitled "corpus_processed_for_STM.csv". This will contain the meta data (and will likely have been produced using the Python Jupyter notebook inside the render_corpus directory). This also assumes that there will be a column called "documents" that contains the text data and an index variable called "X".
 
@@ -155,7 +155,6 @@ year_est_25 <- estimateEffect(~ s(year), model_25, uncertainty = "None", metadat
 
 save.image("rendering_artifacts/stm_promising_models.RData")
 ```
-
 
 ### Run interactive application using stminsights
 
