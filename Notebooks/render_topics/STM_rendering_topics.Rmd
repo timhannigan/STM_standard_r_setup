@@ -288,6 +288,9 @@ for (j in 1:i){
 }
 ```
 
+
+### Topic Proportions
+
 This is a helpful chart for us to see how certain topics are more dominant than others.
 
 ```{r}
@@ -303,6 +306,8 @@ plot(model, cex=.05)
 ```
 
 If we want this graph to be a bit nicer, we can insert our labels and then re-run it. Set the topic names to your relevant specification (fill in the custom labels here).
+
+To DO
 
 ```{r}
 topic_names <- c("TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:")
@@ -332,7 +337,7 @@ Will print all topics. Can also set topic=i for more specific output.
 #summary(covariates_est) 
 ```
 
-# POST-ESTIMATION DIAGNOSTICS
+# Model Summary
 
 ```{r}
 # Model summary using function summary() 
