@@ -20,6 +20,9 @@ This notebook relies on a csv file that has been somewhat curated already entitl
 In order to function properly, this notebook needs to tap into a library. RStudio will recognize if you don't yet have this installed and will ask you to do so.
 
 ```{r}
+# First, ensure that the RStudio environment is cleared so we're starting from scratch
+rm(list = ls())
+
 
 # helpful library for processing strings
 library(stringr)
@@ -127,3 +130,4 @@ We now have our corpus in a dataframe (i.e. a spreadsheet) that is ready for STM
 write.csv(corpus, "Data/corpus_processed_for_STM.csv")
 
 ```
+

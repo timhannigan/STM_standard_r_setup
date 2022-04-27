@@ -22,6 +22,11 @@ The design of this notebook is to serve as a standard template to start a render
 This notebook is presuming these libraries have been installed.
 
 ```{r}
+
+# First, ensure that the RStudio environment is cleared so we're starting from scratch
+rm(list = ls())
+
+
 # Structural topic modeling package 
 library(stm)
 
@@ -398,3 +403,4 @@ rm(kResult)
 rm(mod.out.coor) 
 rm(month_est) 
 ```
+
