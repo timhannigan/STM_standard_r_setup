@@ -49,7 +49,6 @@ We'll attempt to use the standard stm functions to ensure that we can effectivel
 
 ```{r}
 
-
 # Read csv formatted data 
 data <- read.csv("Data/corpus_processed_for_STM.csv") 
 ```

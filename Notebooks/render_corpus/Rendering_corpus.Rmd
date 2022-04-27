@@ -30,7 +30,7 @@ library(stringr)
 
 ```{r}
 # Read csv file 
-corpus <- read.csv("Notebooks/render_corpus/corpus_abstracts_Annals_IJMR.csv") 
+corpus <- read.csv("Data/corpus_abstracts_Annals_IJMR.csv") 
 ```
 
 \
