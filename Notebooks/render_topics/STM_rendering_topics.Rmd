@@ -66,6 +66,8 @@ To make our analysis easier, we're going to make some small changes to names. Fi
 ```{r}
 # easier to deal with as a variable name
 data$year <- data$Year
+data$title <- data$Title
+data$abstract <- data$Abstract
 
 # copy this to a new column that is more generically named, easier for re-use
 data$documents <- data$abstracts_processed
@@ -197,11 +199,17 @@ Once we decide on the optimal model, save it to to file
 
 ```{r}
 i <- 45 # you set this value to the optimal value you determined (above)
-model <- model_45
+model <- model_45 # we'll just call this "model" for now on, to make things easier.
 save(model, file = sprintf("Output/stm_fit_%s_topics.RData", i) )
 ```
 
-# Check features on model
+## Further Inspection of our Topic Model (45 topics)
+
+Now that we have a validated topic, we can use it to do a distant reading. Let's check out our model.
+
+First, we need to assign labels to topics based on what we think they mean (refer to).
+
+#### Labeling topics
 
 This is being saved from a dataframe to a csv file. You can open this up in Excel for easier usage.
 
@@ -214,9 +222,71 @@ write.csv(topics, sprintf("Output/rendering_artifacts/topic_labels_K%s.csv", i),
 
 ```
 
-We can open this csv file in Excel and start labelling the topic meanings.
+We can open this csv file in Excel and start labeling the topic meanings. Note: this will show the top 10 weighted words in each topic. As a first pass, it's a good idea to use these to assign labels. It also might be helpful to look at word clouds for each topic (sized proportionally by weight of word in topic).
 
-# Further Inspection of Validated TModel
+### Plot a wordcloud for topic
+
+```{r}
+# say we want to look for topic 4
+
+j <- 4
+
+set.seed(02138)
+cloud(model, topic=j, scale=c(2,.25))
+
+pdf(sprintf("Output/rendering_artifacts/topic_artifacts/topic_%s_word_cloud.pdf", j), width=5, height=5)
+cloud(model, topic=j, scale=c(2,.25))
+dev.off()
+
+# then re-plot for on-screen use in RStudio
+cloud(model, topic=j, scale=c(2,.25))
+```
+
+This pretty clearly refers to "organizational learning". Notice that this code-block also saved a version of this figure in our "Output/rendering_artifacts" folder. It would also be helpful to look at prototypical documents for this topic
+
+### Find prototype documents using function findThoughts(); we can show this with titles, but can also use the abstracts themselves.
+
+(Note, this duplicates the functionality in stminsights)
+
+```{r}
+set.seed(02138)
+j <- 4
+findThoughts(model, texts = data$title, topics = c(j), n = 4)$docs[[1]] # for titles
+#findThoughts(model, texts = data$abstract, topics = c(j), n = 4)$docs[[1]] # for abstracts
+
+# can also plot this
+thoughts_topic<-findThoughts(model, texts = data$title, topics = c(j), n = 4)$docs[[1]] # for titles
+#thoughts_topic<-findThoughts(model, texts = data$abstract, topics = c(j), n = 4)$docs[[1]] # for abstracts
+pdf(sprintf("Output/rendering_artifacts/topic_artifacts/topic_%s_sample_docs.pdf", j), width=10, height=8.5)
+plotQuote(thoughts_topic, width = 225, text.cex = .5, maxwidth = 1500)
+dev.off()
+# then replot for on-screen use in RStudio
+plotQuote(thoughts_topic, width = 225, text.cex = .5, maxwidth = 1500)
+
+```
+
+
+We can also just run the following code-block to generate word-clouds and sample titles as files for all of the topics in our topic model.
+
+### Generating rendering artifacts for all topics (in a loop)
+
+```{r}
+for (j in 1:i){
+  set.seed(02138)
+  thoughts_topic<- findThoughts(model, texts = data$title,
+                                n = 4, topics = c(j))$docs[[1]]
+  pdf(sprintf("Output/rendering_artifacts/topic_artifacts/topic_%s_sample_docs.pdf", j), width=10, height=8.5)
+  plotQuote(thoughts_topic, width = 225, text.cex = .5, maxwidth = 1500)
+  dev.off()
+  
+  # project the words in a topic
+  set.seed(02138)
+  pdf(sprintf("Output/rendering_artifacts/topic_artifacts/topic_%s_word_cloud.pdf", j), width=5, height=5)
+  cloud(model, topic=j, scale=c(2,.25))
+  dev.off()
+
+}
+```
 
 This is a helpful chart for us to see how certain topics are more dominant than others.
 
@@ -232,14 +302,11 @@ plot(model, cex=.05)
 
 ```
 
-If we want this graph to be a bit nicer, we can insert our labels and then re-run it.
- Set the topic names to your relevant specification (fill in the custom labels here).
+If we want this graph to be a bit nicer, we can insert our labels and then re-run it. Set the topic names to your relevant specification (fill in the custom labels here).
 
 ```{r}
 topic_names <- c("TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:")
 ```
-
-
 
 ### Prepare Topic correlations using function topicCorr()
 
@@ -272,62 +339,6 @@ Will print all topics. Can also set topic=i for more specific output.
 summary(model)
 ```
 
-### Find prototype documents using function findThoughts(); in this case listing titles, but can also use out$meta$documents
-
-Note, this duplicates the functionality in stminsights.
-
-```{r}
-set.seed(02138)
-j <- 4
-findThoughts(model, texts = out$meta$title, topics = j, n = 4) 
-
-# can also wrap this in a plot
-
-thoughts_topic<-findThoughts(model, texts = out$meta$title, topics = j, n = 4) 
-
-pdf(sprintf("rendering_artifacts/topic_%s_sample_docs.pdf", j), width=10, height=8.5)
-plotQuote(thoughts_topic, width = 225, text.cex = .5, maxwidth = 1500)
-dev.off()
-
-# then replot for on-screen use in RStudio
-plotQuote(thoughts_topic, width = 225, text.cex = .5, maxwidth = 1500)
-
-```
-
-### Plot wordcloud for topic
-
-```{r}
-
-set.seed(02138)
-cloud(model, topic=j, scale=c(2,.25))
-
-pdf(sprintf("rendering_artifacts/topic_%s_word_cloud.pdf", j), width=5, height=5)
-cloud(model, topic=j, scale=c(2,.25))
-dev.off()
-
-# then replot for on-screen use in RStudio
-cloud(model, topic=j, scale=c(2,.25))
-```
-
-### Generating rendering artifacts for all topics (in a loop)
-
-```{r}
-for (j in 1:i){
-  set.seed(02138)
-  thoughts_topic<- findThoughts(model, texts = out$meta$documents,
-                                n = 4, topics = j)
-  pdf(sprintf("rendering_artifacts/topic_artifacts/topic_%s_sample_docs.pdf", j), width=10, height=8.5)
-  plotQuote(thoughts_topic, width = 225, text.cex = .5, maxwidth = 1500)
-  dev.off()
-  
-  # project the words in a topic
-  set.seed(02138)
-  pdf(sprintf("rendering_artifacts/topic_artifacts/topic_%s_word_cloud.pdf", j), width=5, height=5)
-  cloud(model, topic=j, scale=c(2,.25))
-  dev.off()
-
-}
-```
 
 ### Extract the topic document matrix (gamma):
 
@@ -346,7 +357,6 @@ write.csv(td_gamma_wide, 'artifacts_for_rendering/topic_document_matrix/topic_do
 ```
 
 # RESULTS
-
 
 ### Plot model results using function plot()
 
