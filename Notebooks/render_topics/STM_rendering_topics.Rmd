@@ -56,7 +56,10 @@ We'll attempt to use the standard stm functions to ensure that we can effectivel
 
 # Read csv formatted data 
 data <- read.csv("Data/corpus_processed_for_STM.csv") 
+
 ```
+
+
 
 ### MODEL SELECTION
 
@@ -403,4 +406,3 @@ rm(kResult)
 rm(mod.out.coor) 
 rm(month_est) 
 ```
-
