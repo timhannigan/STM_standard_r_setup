@@ -1,4 +1,4 @@
-# STM_standard_r_setup
+# An R Notebook for Rendering with Structural Topic Modeling
 
 ### This is a template for STM work by the IDeaS Group 2022
 
