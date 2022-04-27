@@ -59,7 +59,32 @@ data <- read.csv("Data/corpus_processed_for_STM.csv")
 
 ```
 
+### Fixing up corpus to match analysis conventions
 
+To make our analysis easier, we're going to make some small changes to names. First, for the covariates we're going use, we'll make them all lowercase. Second, we'll rename *abstracts_processed* to *documents*. This is so we can keep our stm code slightly more generic and reusable across projects.
+
+```{r}
+# easier to deal with as a variable name
+data$year <- data$Year
+
+# copy this to a new column that is more generically named, easier for re-use
+data$documents <- data$abstracts_processed
+
+```
+
+### Bringing our data into the stm library
+
+We need to bring our data (corpus) into the stm library. There are some basic pre-processing functions built into stm, but instead of blackboxing these, we'll already done some of this work in our other notebook ("Rendering_corpus").
+
+```{r}
+# Process data using function textProcessor() 
+processed <- textProcessor(data$documents, metadata = data, stem = FALSE, striphtml= TRUE)
+
+# Prepare data using function prepDocuments() 
+out <- prepDocuments(processed$documents, processed$vocab, processed$meta, lower.thresh = 25)
+
+
+```
 
 ### MODEL SELECTION
 
@@ -75,29 +100,32 @@ start.time <- Sys.time()
 set.seed(02138)
 K_ <- c(10,15,20,25,30,35,40,45,50) # set the range here
 
-# consider including the covariates here, i.e. prevalence =~ s(year)
+# also note the number of cores you have available on your machine and set it here as a parameter cores=10
 
-# also note the number of cores you have available on your machine and set it here as a parameter cores=27
-kResult <- searchK(out$documents, out$vocab, K = K_, prevalence =~ s(year), init.type = "Spectral", data = out$meta, verbose=FALSE)
+kResult <- searchK(out$documents, out$vocab, K = K_, prevalence =~ year + journal_code, init.type = "Spectral", data = out$meta, verbose=FALSE, cores=27)
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken # this will tell you how long this procedure took to run
-save(kResult, file = "rendering_artifacts/kResult.RData") # save results
+save(kResult, file = "Output/kResult.RData") # save results
 
 ```
 
 #### Plot diagnostic results using built-in STM function, then save as PDF file
 
+One way we can try to find some statistical evidence pointing to the optimal number of topics to use is to look for common plateaus across these diagnostics.
+
 ```{r}
 set.seed(02138)
 # first, save to file
-pdf(file ="rendering_artifacts/kResult.pdf", width=10, height=8.5)
+pdf(file ="Output/kResult.pdf", width=10, height=8.5)
 print(plot(kResult, cex=.25)) # note: importance of wrapping it here, so PDF file isn't corrupted
 dev.off()
 
 # then replot for on-screen use in RStudio
 plot(kResult) 
 ```
+
+From this, it seems that 30, 40 and 45 might be good candidates. However, an increasingly common practice in the IDeaS community (and the social sciences) is looking at how two particular metrics are jointly maximized (semantic-coherence and exclusivity).
 
 #### Plot Semantic coherence-exclusivity plot using function plot()
 
@@ -113,7 +141,7 @@ However, the ultimate decision is comes down to human validation and interpretat
 
 ```{r}
 set.seed(02138)
-pdf(file ="rendering_artifacts/coherence-exclusivity.pdf", width=10, height=8.5)
+pdf(file ="Output/coherence-exclusivity.pdf", width=10, height=8.5)
 plot(kResult$results$semcoh, kResult$results$exclus, xlab = "Semantic Coherence", ylab = "Exclusivity")
 # Add labels to semantic coherence-exclusivity plot using function text() 
 text(kResult$results$semcoh, kResult$results$exclus, labels = paste("K", kResult$results$K), pos = 1)
@@ -125,51 +153,52 @@ plot(kResult$results$semcoh, kResult$results$exclus, xlab = "Semantic Coherence"
 text(kResult$results$semcoh, kResult$results$exclus, labels = paste("K", kResult$results$K), pos = 1)
 ```
 
-### MODELING: working with a specification
+Here, we see 30 and 45 topics are most promising candidates.
 
-This list of covariates should match the searchK formula above, i.e. prevalence =\~ s(year)
+### Validating the optimal model using *stminsights*
 
-Procedure: use stminsights to interactively browse a set of promising specifications. Save different specifications that best approximate the frontier, then browse in stminsights to validate.
+Grimmer & Stewart (2013) remind us that automated methods can only get us so far. The ultimate decision about the optimal number of topics is determined by human interpretation. We can think about the work we've done so far as supplementing our interpretive abilities. Automated methods are not a replacement for our interpretations informed by domain-expertise.
 
-For example, if there is a set of models around K=25, create versions of them below. Then compare in stminsights.
+A good way to figure out which topic model to use is a tool called *stminsights*. This enables us to interactively browse a set of promising specifications. Save different specifications that best approximate the frontier, then browse in *stminsights* to validate.
+
+For example, in the section above we found that 30 and 45 topics are promising models. We're going to use this tool to compare them in *stminsights*.
 
 ```{r}
 
-
-i <- 25 # this is where we set the topic specification
+i <- 30 # this is where we set the topic specification
 set.seed(02138)
-# Specification for K topics using function stm() 
-model_25 <- stm(out$documents, out$vocab, K = i, max.em.its = 150, data = out$meta, init.type = "Spectral", verbose=FALSE)
-year_est_25 <- estimateEffect(~ s(year), model_25, uncertainty = "None", metadata = out$meta) 
+
+model_30 <- stm(out$documents, out$vocab, prevalence =~ year + journal_code, K = i, max.em.its = 150, data = out$meta, init.type = "Spectral", verbose=FALSE)
+est_30 <- estimateEffect(~year + journal_code, model_30, uncertainty = "None", metadata = out$meta) 
 
 # repeat the above block of code for other promising candidate models
+i <- 45 # this is where we set the topic specification
+set.seed(02138)
 
-save.image("rendering_artifacts/stm_promising_models.RData")
+model_45 <- stm(out$documents, out$vocab, prevalence =~ year + journal_code, K = i, max.em.its = 150, data = out$meta, init.type = "Spectral", verbose=FALSE)
+est_45 <- estimateEffect(~year + journal_code, model_45, uncertainty = "None", metadata = out$meta) 
+
+
+save.image("Output/stm_promising_models.RData")
 ```
 
 ### Run interactive application using stminsights
 
-This can help you to interactively browse the topic model.
+This can help you to interactively browse the topic model. Load this tool in a web browser and then find the file called "stm_promising_models.RData" in the Output directory of this RProject.
 
 ```{r}
 run_stminsights()
 
 ```
 
-Once you decide on the optimal model, save it to to file
+Based on the interpretive analysis, it seems that 45 is the optimal number of topics to use. Be sure to press the "stop" button in RStudio so we can return to this workflow (away from the web browser with *stminsights*).
+
+Once we decide on the optimal model, save it to to file
 
 ```{r}
-i <- 25 # you set this value to the optimal value you determined (above)
-save(model, file = sprintf("rendering_artifacts/stm_fit_%s_topics.RData", i) )
-```
-
-### Run interactive application using stminsights
-
-This can help you to interactively browse the topic model.
-
-```{r}
-run_stminsights()
-
+i <- 45 # you set this value to the optimal value you determined (above)
+model <- model_45
+save(model, file = sprintf("Output/stm_fit_%s_topics.RData", i) )
 ```
 
 # Check features on model
@@ -181,16 +210,20 @@ set.seed(02138)
 topics <- labelTopics(model, n=10) # setting the top 10 words 
 topics <- data.frame("features" = t(topics$frex)) # using FREX, but can also use prob, lift
 colnames(topics) <- paste("Topics", c(1:i))
-write.csv(topics, sprintf("rendering_artifacts/topic_labels_K%s.csv", i), row.names = TRUE) 
+write.csv(topics, sprintf("Output/rendering_artifacts/topic_labels_K%s.csv", i), row.names = TRUE) 
 
 ```
 
+We can open this csv file in Excel and start labelling the topic meanings.
+
 # Further Inspection of Validated TModel
+
+This is a helpful chart for us to see how certain topics are more dominant than others.
 
 ```{r}
 set.seed(02138)
 
-pdf(file =sprintf("rendering_artifacts/expected_topic_proportions_K%s.pdf", i), width=20, height=20)
+pdf(file =sprintf("Output/rendering_artifacts/expected_topic_proportions_K%s.pdf", i), width=20, height=20)
 print(plot(model, cex=.05)) # note: importance of wrapping it here, so PDF file isn't corrupted
 dev.off()
 
@@ -199,20 +232,18 @@ plot(model, cex=.05)
 
 ```
 
-### Inspection of model using LDAVis
+If we want this graph to be a bit nicer, we can insert our labels and then re-run it.
+ Set the topic names to your relevant specification (fill in the custom labels here).
 
 ```{r}
-set.seed(02138)
-toLDAvis(model, out$documents, 30, reorder.topics=FALSE, out.dir="rendering_artifacts/ldavis/")     
-
-# open terminal, type `cd ldavis && python3 -m http.server 8000`
-# then open http://localhost:8000 in your web browser
-
+topic_names <- c("TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:")
 ```
+
+
 
 ### Prepare Topic correlations using function topicCorr()
 
-Note the cutoff threshold parameter here. See manual for more details.
+We can also see how certain topics are more or less correlated with one another in documents. Note the cutoff threshold parameter here. See manual for more details.
 
 ```{r}
 set.seed(02138)
@@ -316,11 +347,6 @@ write.csv(td_gamma_wide, 'artifacts_for_rendering/topic_document_matrix/topic_do
 
 # RESULTS
 
-### Set the topic names to your relevant specification (fill in the custom labels here).
-
-```{r}
-topic_names <- c("TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:")
-```
 
 ### Plot model results using function plot()
 
