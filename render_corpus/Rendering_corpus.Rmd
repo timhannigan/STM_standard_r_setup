@@ -1,0 +1,134 @@
+---
+title: 'IDeaS Standard Notebook for Corpus Rendering'
+output:
+    pdf_document: default
+  html_notebook: default
+editor_options:
+  chunk_output_type: console
+  markdown: 
+    wrap: sentence
+---
+
+# Rendering a Text Corpus for Structural Topic Modeling - Template Notebook IDeaS
+
+### Maintained by the IDeaS Group 2022
+
+This notebook relies on a csv file that has been somewhat curated already entitled "corpus_abstracts_Annals_IJMR.csv". This is from a working paper by Gorgi Krlev, Tim Hannigan, and Andre Spicer (2022). This file contains abstracts (and meta-data) from papers published at the Academy of Management Annals and International Journal of Management Reviews between 2009 and 2021. The goal of this notebook is to do some basic pre-processing of the abstracts so we can do some structural topic modeling.
+
+### Set up libraries
+
+In order to function properly, this notebook needs to tap into a library. RStudio will recognize if you don't yet have this installed and will ask you to do so.
+
+```{r}
+
+# helpful library for processing strings
+library(stringr)
+
+```
+
+### Load Corpus as CSV
+
+```{r}
+# we need to locate ourselves in the folder "render_corpus" (this is relative to the RProject)
+setwd("render_corpus")
+
+# Read csv file 
+corpus <- read.csv("corpus_abstracts_Annals_IJMR.csv") 
+```
+
+\
+The file currently has the following columns:
+
+*ID, Journal, Volume, Number, Page range, Authors, Year, Title, DOI, Abstract, journal_code*
+
+For the structural topic modeling (STM) analysis, we'll need to do some basic pre-processing of the *Abstract* column. First, we'll make a copy of the *Abstract* column called *abstracts_processed.*
+
+```{r}
+corpus$abstracts_processed <- corpus$Abstract
+```
+
+### Basic pre-processing
+
+Next, we're going to go through a series of text processing steps. This will clean up the text to enable the topic modeling analysis.
+
+#### Linebreaks
+
+We're going to remove any line-breaks (they appear in text as "\\n"). This is effectively a simple search and replace operation.
+
+```{r}
+corpus$abstracts_processed <- gsub(pattern = "\n", replacement = " ", x = corpus$abstracts_processed)
+```
+
+#### Standardizing format of quotes
+
+Next, we're going to standardize the formatting of quotes.
+
+```{r}
+corpus$abstracts_processed <- gsub(pattern = "’", replacement = "'", x = corpus$abstracts_processed)
+corpus$abstracts_processed <- gsub(pattern = '“', replacement = '"', x = corpus$abstracts_processed)
+corpus$abstracts_processed <- gsub(pattern = '”', replacement = '"', x = corpus$abstracts_processed)
+```
+
+### Transforming abstracts into a *bag of words*
+
+Topic modeling is based on an approach called "bag of words". This means we need to transform our text corpus so that each "document" (abstract) is just a series of lowercase words with no apostrophes or other punctuation.
+
+#### Remove possessives
+
+```{r}
+corpus$abstracts_processed <- gsub(pattern = "'s", replacement = " ", x = corpus$abstracts_processed)
+corpus$abstracts_processed <- gsub(pattern = "'re", replacement = " ", x = corpus$abstracts_processed)
+corpus$abstracts_processed <- gsub(pattern = "'ve", replacement = " ", x = corpus$abstracts_processed)
+corpus$abstracts_processed <- gsub(pattern = "'ll", replacement = " ", x = corpus$abstracts_processed)
+corpus$abstracts_processed <- gsub(pattern = "'m", replacement = " ", x = corpus$abstracts_processed)
+```
+
+#### Remove Non-Alphanumeric Characters
+
+We're going to use the stringr library to help with this operation. These are convenient functions that have been created to help with this type of workflow.
+
+```{r}
+corpus$abstracts_processed <- str_replace_all(corpus$abstracts_processed, "[^[:alnum:]]", " ")
+```
+
+#### Remove Punctuation Characters
+
+```{r}
+corpus$abstracts_processed <- str_replace_all(corpus$abstracts_processed, "[[:punct:]]", " ")
+```
+
+#### Remove Numeric Characters
+
+Topic modeling with a bag of words we won't consider numbers in our texts.
+
+```{r}
+corpus$abstracts_processed <- str_replace_all(corpus$abstracts_processed, "[[:digit:]]", " ")
+```
+
+#### Along the way we've inadvertently introduced several extra space characters, so we'll remove them using str_squish function.
+
+The *stringr* library has a helpful function called *str_squish* to help us with this operation.
+
+```{r}
+corpus$abstracts_processed <- str_squish(corpus$abstracts_processed)
+```
+
+#### Change to lower case
+
+One final pre-processing step is to change all words in our *abstracts_processed* column to lower case. We'll also use the *stringr* library here and the included function *str_to_lower*
+
+```{r}
+corpus$abstracts_processed <- str_to_lower(corpus$abstracts_processed)
+```
+
+### Save corpus for structural topic modeling
+
+We now have our corpus in a dataframe (i.e. a spreadsheet) that is ready for STM analysis. For our workflow, we will hand this off to another R Notebook. It requires a csv file entitled "corpus_processed_for_STM.csv". We will save a copy of the dataframe in this folder, and another one in the folder "render_topics".
+
+```{r}
+# save in local folder
+write.csv(corpus, "corpus_processed_for_STM.csv")
+
+# save a copy of this in the other folder
+write.csv(corpus, "../render_topics/corpus_processed_for_STM.csv")
+```
