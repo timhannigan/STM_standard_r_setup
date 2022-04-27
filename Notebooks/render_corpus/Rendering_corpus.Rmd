@@ -29,11 +29,8 @@ library(stringr)
 ### Load Corpus as CSV
 
 ```{r}
-# we need to locate ourselves in the folder "render_corpus" (this is relative to the RProject)
-setwd("render_corpus")
-
 # Read csv file 
-corpus <- read.csv("corpus_abstracts_Annals_IJMR.csv") 
+corpus <- read.csv("Notebooks/render_corpus/corpus_abstracts_Annals_IJMR.csv") 
 ```
 
 \
@@ -123,12 +120,10 @@ corpus$abstracts_processed <- str_to_lower(corpus$abstracts_processed)
 
 ### Save corpus for structural topic modeling
 
-We now have our corpus in a dataframe (i.e. a spreadsheet) that is ready for STM analysis. For our workflow, we will hand this off to another R Notebook. It requires a csv file entitled "corpus_processed_for_STM.csv". We will save a copy of the dataframe in this folder, and another one in the folder "render_topics".
+We now have our corpus in a dataframe (i.e. a spreadsheet) that is ready for STM analysis. For our workflow, we will hand this off to another R Notebook. It requires a csv file entitled "corpus_processed_for_STM.csv". We will save a copy of the dataframe.
 
 ```{r}
 # save in local folder
-write.csv(corpus, "corpus_processed_for_STM.csv")
+write.csv(corpus, "Data/corpus_processed_for_STM.csv")
 
-# save a copy of this in the other folder
-write.csv(corpus, "../render_topics/corpus_processed_for_STM.csv")
 ```

@@ -9,11 +9,11 @@ editor_options:
     wrap: sentence
 ---
 
-# Structural Topic Modeling - STM Rendering - Template Notebook IDeaS 
+# Structural Topic Modeling - STM Rendering - Template Notebook IDeaS
 
 ### Maintained by the IDeaS Group 2022
 
-This notebook assumes that some basic pre-processing has been done already. The required input is a csv file entitled "corpus_processed_for_STM.csv". This will contain the meta data (and will likely have been produced using the Python Jupyter notebook inside the render_corpus directory). This also assumes that there will be a column called "documents" that contains the text data and an index variable called "X".
+This notebook assumes that some basic pre-processing has been done already. The required input is a csv file entitled "corpus_processed_for_STM.csv". This is from a working paper by Gorgi Krlev, Tim Hannigan, and Andre Spicer (2022). This file contains abstracts (and meta-data) from papers published at the Academy of Management Annals and International Journal of Management Reviews between 2009 and 2021.
 
 The design of this notebook is to serve as a standard template to start a rendering process from. This code was inspired by Lindstedt (2019) and work by Tim Hannigan.
 
@@ -28,9 +28,6 @@ library(stm)
 # Network analysis and visualization package 
 library(igraph)
 
-# topic model LDAvis visualization
-library(LDAvis)
-
 # ggplot2 for visualizations
 library(ggplot2)
 
@@ -44,30 +41,17 @@ library(tidytext)
 
 ### PREPROCESSING
 
-This notebook assumes some basic pre-processing has been done already (i.e. in Excel, or using the Python Jupyter notebook). We'll attempt to use the standard STM functions to ensure that we can effectively use the covariates in the model.
+This notebook assumes some basic pre-processing has been done already. We'll attempt to use the standard STM functions to ensure that we can effectively use the covariates in the model.
 
 We'll attempt to use the standard stm functions to ensure that we can effectively use the covariates in the model. These procedures will covert to lower case, remove punctuation, remove stopwords, remove numbers, and strip html.
 
 ### Load Corpus as CSV
 
 ```{r}
-# this is relative to the RProj
-setwd("render_topics")
 
 
 # Read csv formatted data 
-data <- read.csv("corpus_processed_for_STM.csv") 
-
-# any custom code for further processing the documents column
-#data$documents <- gsub(pattern = "\n", replacement = " ", x = data$documents)
-#
-
-# Process data using function textProcessor() 
-processed <- textProcessor(data$Document, metadata = data, stem = FALSE, striphtml= TRUE)
-
-# Prepare data using function prepDocuments() 
-out <- prepDocuments(processed$documents, processed$vocab, processed$meta, lower.thresh = 25)
-
+data <- read.csv("Data/corpus_processed_for_STM.csv") 
 ```
 
 ### MODEL SELECTION
