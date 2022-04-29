@@ -1,7 +1,7 @@
 ---
 title: 'IDeaS Standard Notebook for STM Rendering'
 output:
-    pdf_document: default
+  pdf_document: default
   html_notebook: default
 editor_options:
   chunk_output_type: console
@@ -26,6 +26,8 @@ This notebook is presuming these libraries have been installed.
 # First, ensure that the RStudio environment is cleared so we're starting from scratch
 rm(list = ls())
 
+# setup code
+knitr::opts_knit$set(root.dir = "../../")
 
 # Structural topic modeling package 
 library(stm)
@@ -53,7 +55,6 @@ We'll attempt to use the standard stm functions to ensure that we can effectivel
 ### Load Corpus as CSV
 
 ```{r}
-
 # Read csv formatted data 
 data <- read.csv("Data/corpus_processed_for_STM.csv") 
 
@@ -189,7 +190,7 @@ save.image("Output/stm_promising_models.RData")
 This can help you to interactively browse the topic model. Load this tool in a web browser and then find the file called "stm_promising_models.RData" in the Output directory of this RProject.
 
 ```{r}
-run_stminsights()
+#run_stminsights()
 
 ```
 
@@ -344,106 +345,3 @@ Will print all topics. Can also set topic=i for more specific output.
 summary(model)
 ```
 
-
-### Extract the topic document matrix (gamma):
-
-```{r}
-# Using TidyText: https://rdrr.io/cran/tidytext/man/stm_tidiers.html
-td_gamma <- tidy(model, matrix = "gamma",
-                 document_names = data$X)
-
-# need to convert from long to wide form (following the spread function: http://www.cookbook-r.com/Manipulating_data/Converting_data_between_wide_and_long_format/)
-td_gamma_wide <- spread(td_gamma, topic, gamma)
-td_gamma_wide
-
-# process this further (i.e. in Python)
-write.csv(td_gamma_wide, 'artifacts_for_rendering/topic_document_matrix/topic_document_matrix.csv')
- 
-```
-
-# RESULTS
-
-### Plot model results using function plot()
-
-```{r}
-set.seed(02138)
-plot(model, type = "summary", labeltype = "frex", xlim = c(0,.20),
-     topic.names = topic_names)
-
-```
-
-### Plot topic correlation graph using function plot()
-
-Set the topic names to your relevant specification (fill in the custom labels here).
-
-```{r}
-set.seed(02138)
-plot(mod.out.coor, vlabels = c(topic.names = topic_names))
-```
-
-### Plot covariate estimates using function plot()
-
-```{r}
-set.seed(02138)
-#plot(covariates_est, "months_since_origin", method="continuous", topics=c(20), xlim=c(1,15), xlab = "months_since_origin", labeltype = "custom", custom.labels = c("T20:"))
-
-```
-
-### Topic contrasts
-
-```{r}
-
-###
-#by covariate Y
-###
-j <- 2
-pdf(sprintf("rendering_artifacts/topic_artifacts/topic_%s_by_Y", j), width=10, height=8.5)
-
-plot(predict_topics, covariate = "Y", topics = c(j),
-     model = model_40, method = "difference",
-     cov.value1 = "value_1",
-     cov.value2 = "value_2",
-     xlab = "More value_2 ... More value_1",
-     main = "Topic distributions by Y",
-     xlim = c(-.5, .5),
-     labeltype = "custom",
-     custom.labels = c(springf('Topic %s', j)))
-
-dev.off()
-
-```
-
-### Interactions
-
-Note the following from the STM vignette (<https://cran.r-project.org/web/packages/stm/vignettes/stmVignette.pdf>): "We have chosen to enter the day variable here linearly for simplicity; however, we note that you can use the software to estimate interactions with non-linear variables such as splines. However, plot.estimateEffect only supports interactions with at least one binary effect modification covariate."
-
-```{r}
-set.seed(02138)
-
-model_interactions <-  stm(out$documents, out$vocab, K = i, max.em.its = 150, data = out$meta, init.type = "Spectral", prevalence =~ rating * day, verbose=FALSE)
-
-prep <- estimateEffect(c(20) ~ rating * day, model_interactions,  metadata = out$meta, uncertainty = "None")
-
-plot(prep, covariate= "months_since_origin", method = "continuous", 
-     model = model_interactions, printlegend = FALSE, xaxt = "n", xlab = "Time", main = "Topic 14",
-     moderator="Y", moderator.value="value_1", linecol="red", ylim = c(-1,1), )
-
-plot(prep, covariate="months_since_origin", method = "continuous", 
-     model = model_interactions, printlegend = FALSE, xaxt = "n", xlab = "Time",
-     moderator="Y", moderator.value="value_2", linecol="blue", add=T)
-
-```
-
-### CLEAN UP
-
-Strictly speaking, it is not necessary to run this code-block, but it can help keep your R Environment clean.
-
-```{r}
-rm(data) 
-rm(out) 
-rm(model) 
-rm(processed) 
-rm(kResult) 
-rm(mod.out.coor) 
-rm(month_est) 
-```
