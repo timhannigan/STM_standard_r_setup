@@ -208,6 +208,8 @@ save.image("Output/stm_promising_models.RData")
 
 This can help you to interactively browse the topic model.
 Load this tool in a web browser and then find the file called "stm_promising_models.RData" in the Output directory of this RProject.
+Be sure to run this in the R Console by copying and pasting "run_stminsights()".
+This will open up *stminsights* in your web-browser.
 
 ```{r}
 #run_stminsights()
@@ -327,12 +329,12 @@ This will print the topic \# and the three highest weighted words within each to
 ```{r}
 set.seed(02138)
 
-pdf(file =sprintf("Output/rendering_artifacts/expected_topic_proportions_K%s.pdf", i), width=20, height=20)
-plot(model, cex=.05) # note: importance of wrapping it here, so PDF file isn't corrupted
+pdf(file =sprintf("Output/rendering_artifacts/expected_topic_proportions_K%s.pdf", i), width=8, height=10) # inches
+plot(model, type = "summary", labeltype = "frex", xlim = c(0,.35), cex=0.25) # note: importance of wrapping it here, so PDF file isn't corrupted
 dev.off()
 
 # then replot for on-screen use in RStudio
-plot(model, cex=.05)
+plot(model, type = "summary", labeltype = "frex", xlim = c(0,.35), cex=0.25)
 
 ```
 
@@ -345,8 +347,31 @@ It can be helpful to check the topic word clouds and the top documents per topic
 It can also be extremely helpful to browse these topics using *stminsights*.
 
 ```{r}
-topic_names <- c("Topic 1: leadership", "Topic 2: marketing", "Topic 3: entrepreneurial teams", "Topic 4: organizational learning", "Topic 5: identity", "Topic 6: social capital", "Topic 7: firm environments", "Topic 8: international experience", "Topic 9: business cases", "Topic 10: work-life", "Topic 11: dynamic capabilities", "Topic 12: organizational research", "Topic 13: institutional complexity", "Topic 14: group dynamics", "Topic 15: knowledge & power", "Topic 16: diversity & categories", "Topic 17: strategy making", "Topic 18: integrative review", "Topic 19: performance measures", "Topic 20: control processes", "Topic 21: levels of analysis", "Topic 22: management frameworks", "Topic 23: political", "Topic 24: behaviors & outcomes", "Topic 25: time & change", "Topic 26: work design", "Topic 27: cross-cultural", "Topic 28: public policy", "Topic 29: research evidence", "Topic 30: constructs/variables")
+topic_names <- c("Topic 1 leadership:", "Topic 2 marketing:", "Topic 3 entrepreneurial teams:", "Topic 4 organizational learning:", "Topic 5 identity:", "Topic 6 social capital:", "Topic 7 firm environments:", "Topic 8 international experience:", "Topic 9 business cases:", "Topic 10 work-life:", "Topic 11 dynamic capabilities:", "Topic 12 organizational research:", "Topic 13 institutional complexity:", "Topic 14 group dynamics:", "Topic 15 knowledge & power:", "Topic 16 approaches in management:", "Topic 17 strategy making:", "Topic 18 integrative review:", "Topic 19 performance measures:", "Topic 20 control processes:", "Topic 21 levels of analysis:", "Topic 22 management frameworks:", "Topic 23 political:", "Topic 24 behaviors & outcomes:", "Topic 25 time & change:", "Topic 26 work design:", "Topic 27 cross-cultural:", "Topic 28 public policy:", "Topic 29 research evidence:", "Topic 30 constructs/variables:")
 ```
+
+### Topic Proportions (using our labels)
+
+Now we will generate the same chart, but with our labels included.
+
+```{r}
+set.seed(02138)
+
+pdf(file =sprintf("Output/rendering_artifacts/expected_topic_proportions_K%s_with_labels.pdf", i), width=8, height=10)
+
+plot(model, type = "summary", labeltype = "frex", xlim = c(0,.35),
+     topic.names =topic_names, cex=0.25)
+       
+dev.off()
+
+# then replot for on-screen use in RStudio
+plot(model, type = "summary", labeltype = "frex", xlim = c(0,.35),
+     topic.names =topic_names, cex=0.25)
+
+
+```
+
+
 
 ### Prepare Topic correlations using function topicCorr()
 
