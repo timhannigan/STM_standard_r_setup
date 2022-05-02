@@ -13,9 +13,13 @@ editor_options:
 
 ### Maintained by the IDeaS Group 2022
 
-This notebook assumes that some basic pre-processing has been done already. The required input is a csv file entitled "corpus_processed_for_STM.csv". This is from a working paper by Gorgi Krlev, Tim Hannigan, and Andre Spicer (2022). This file contains abstracts (and meta-data) from papers published at the Academy of Management Annals and International Journal of Management Reviews between 2009 and 2021.
+This notebook assumes that some basic pre-processing has been done already.
+The required input is a csv file entitled "corpus_processed_for_STM.csv".
+This is from a working paper by Gorgi Krlev, Tim Hannigan, and Andre Spicer (2022).
+This file contains abstracts (and meta-data) from papers published at the Academy of Management Annals and International Journal of Management Reviews between 2009 and 2021.
 
-The design of this notebook is to serve as a standard template to start a rendering process from. This code was inspired by Lindstedt (2019) and work by Tim Hannigan.
+The design of this notebook is to serve as a standard template to start a rendering process from.
+This code was inspired by Lindstedt (2019) and work by Tim Hannigan.
 
 ### Set up libraries
 
@@ -48,9 +52,11 @@ library(tidytext)
 
 ### PREPROCESSING
 
-This notebook assumes some basic pre-processing has been done already. We'll attempt to use the standard STM functions to ensure that we can effectively use the covariates in the model.
+This notebook assumes some basic pre-processing has been done already.
+We'll attempt to use the standard STM functions to ensure that we can effectively use the covariates in the model.
 
-We'll attempt to use the standard stm functions to ensure that we can effectively use the covariates in the model. These procedures will covert to lower case, remove punctuation, remove stopwords, remove numbers, and strip html.
+We'll attempt to use the standard stm functions to ensure that we can effectively use the covariates in the model.
+These procedures will covert to lower case, remove punctuation, remove stopwords, remove numbers, and strip html.
 
 ### Load Corpus as CSV
 
@@ -62,7 +68,10 @@ data <- read.csv("Data/corpus_processed_for_STM.csv")
 
 ### Fixing up corpus to match analysis conventions
 
-To make our analysis easier, we're going to make some small changes to names. First, for the covariates we're going use, we'll make them all lowercase. Second, we'll rename *abstracts_processed* to *documents*. This is so we can keep our stm code slightly more generic and reusable across projects.
+To make our analysis easier, we're going to make some small changes to names.
+First, for the covariates we're going use, we'll make them all lowercase.
+Second, we'll rename *abstracts_processed* to *documents*.
+This is so we can keep our stm code slightly more generic and reusable across projects.
 
 ```{r}
 # easier to deal with as a variable name
@@ -77,7 +86,8 @@ data$documents <- data$abstracts_processed
 
 ### Bringing our data into the stm library
 
-We need to bring our data (corpus) into the stm library. There are some basic pre-processing functions built into stm, but instead of blackboxing these, we'll already done some of this work in our other notebook ("Rendering_corpus").
+We need to bring our data (corpus) into the stm library.
+There are some basic pre-processing functions built into stm, but instead of blackboxing these, we'll already done some of this work in our other notebook ("Rendering_corpus").
 
 ```{r}
 # Process data using function textProcessor() 
@@ -95,7 +105,8 @@ Recall the guidance on model selection in STM.
 
 From Lindstedt (2019:311): "For shorter, focused corpora (i.e., those ranging from a few hundred to a few thousand documents in size), an initial choice between five and 50 topics is best, whereas for larger, unfocused corpora (i.e., those ranging from tens of thousands to hundreds of thousands of documents in size or larger), previous research has found that between 60 and 100 topics are best (Roberts et al. 2018)."
 
-This is also where we set which covariates we want in the model. Recall that the values for the covariates are setup in the source dataframe ahead of time (before using this notebook in R).
+This is also where we set which covariates we want in the model.
+Recall that the values for the covariates are setup in the source dataframe ahead of time (before using this notebook in R).
 
 ```{r}
 set.seed(02138)
@@ -121,18 +132,20 @@ One way we can try to find some statistical evidence pointing to the optimal num
 set.seed(02138)
 # first, save to file
 pdf(file ="Output/kResult.pdf", width=10, height=8.5)
-print(plot(kResult, cex=.25)) # note: importance of wrapping it here, so PDF file isn't corrupted
+plot(kResult, cex=.25) # note: importance of wrapping it here, so PDF file isn't corrupted
 dev.off()
 
 # then replot for on-screen use in RStudio
 plot(kResult) 
 ```
 
-From this, it seems that 30, 40 and 45 might be good candidates. However, an increasingly common practice in the IDeaS community (and the social sciences) is looking at how two particular metrics are jointly maximized (semantic-coherence and exclusivity).
+From this, it seems that 30, 40 and 45 might be good candidates.
+However, an increasingly common practice in the IDeaS community (and the social sciences) is looking at how two particular metrics are jointly maximized (semantic-coherence and exclusivity).
 
 #### Plot Semantic coherence-exclusivity plot using function plot()
 
-This is where we're looking for a model specification that corresponds with the coherence-exclusivity frontier. Essentially, we're looking for a model that jointly maximizes Exclusivity and Semantic Coherence.
+This is where we're looking for a model specification that corresponds with the coherence-exclusivity frontier.
+Essentially, we're looking for a model that jointly maximizes Exclusivity and Semantic Coherence.
 
 From Lindstedt (2019: 311):
 
@@ -160,11 +173,17 @@ Here, we see 30 and 45 topics are most promising candidates.
 
 ### Validating the optimal model using *stminsights*
 
-Grimmer & Stewart (2013) remind us that automated methods can only get us so far. The ultimate decision about the optimal number of topics is determined by human interpretation. We can think about the work we've done so far as supplementing our interpretive abilities. Automated methods are not a replacement for our interpretations informed by domain-expertise.
+Grimmer & Stewart (2013) remind us that automated methods can only get us so far.
+The ultimate decision about the optimal number of topics is determined by human interpretation.
+We can think about the work we've done so far as supplementing our interpretive abilities.
+Automated methods are not a replacement for our interpretations informed by domain-expertise.
 
-A good way to figure out which topic model to use is a tool called *stminsights*. This enables us to interactively browse a set of promising specifications. Save different specifications that best approximate the frontier, then browse in *stminsights* to validate.
+A good way to figure out which topic model to use is a tool called *stminsights*.
+This enables us to interactively browse a set of promising specifications.
+Save different specifications that best approximate the frontier, then browse in *stminsights* to validate.
 
-For example, in the section above we found that 30 and 45 topics are promising models. We're going to use this tool to compare them in *stminsights*.
+For example, in the section above we found that 30 and 45 topics are promising models.
+We're going to use this tool to compare them in *stminsights*.
 
 ```{r}
 
@@ -187,32 +206,39 @@ save.image("Output/stm_promising_models.RData")
 
 ### Run interactive application using stminsights
 
-This can help you to interactively browse the topic model. Load this tool in a web browser and then find the file called "stm_promising_models.RData" in the Output directory of this RProject.
+This can help you to interactively browse the topic model.
+Load this tool in a web browser and then find the file called "stm_promising_models.RData" in the Output directory of this RProject.
 
 ```{r}
 #run_stminsights()
 
 ```
 
-Based on the interpretive analysis, it seems that 45 is the optimal number of topics to use. Be sure to press the "stop" button in RStudio so we can return to this workflow (away from the web browser with *stminsights*).
+Based on the interpretive analysis, it seems that 30 is the optimal number of topics to use.
+Be sure to press the "stop" button in RStudio so we can return to this workflow (away from the web browser with *stminsights*).
 
 Once we decide on the optimal model, save it to to file
 
 ```{r}
-i <- 45 # you set this value to the optimal value you determined (above)
-model <- model_45 # we'll just call this "model" for now on, to make things easier.
+
+i <- 30 # you set this value to the optimal value you determined (above)
+model <- model_30 # we'll just call this "model" for now on, to make things easier.
 save(model, file = sprintf("Output/stm_fit_%s_topics.RData", i) )
+
+
 ```
 
-## Further Inspection of our Topic Model (45 topics)
+## Further Inspection of our Topic Model (30 topics)
 
-Now that we have a validated topic, we can use it to do a distant reading. Let's check out our model.
+Now that we have a validated topic, we can use it to do a distant reading.
+Let's check out our model.
 
 First, we need to assign labels to topics based on what we think they mean (refer to).
 
 #### Labeling topics
 
-This is being saved from a dataframe to a csv file. You can open this up in Excel for easier usage.
+This is being saved from a dataframe to a csv file.
+You can open this up in Excel for easier usage.
 
 ```{r}
 set.seed(02138)
@@ -223,7 +249,10 @@ write.csv(topics, sprintf("Output/rendering_artifacts/topic_labels_K%s.csv", i),
 
 ```
 
-We can open this csv file in Excel and start labeling the topic meanings. Note: this will show the top 10 weighted words in each topic. As a first pass, it's a good idea to use these to assign labels. It also might be helpful to look at word clouds for each topic (sized proportionally by weight of word in topic).
+We can open this csv file in Excel and start labeling the topic meanings.
+Note: this will show the top 10 weighted words in each topic.
+As a first pass, it's a good idea to use these to assign labels.
+It also might be helpful to look at word clouds for each topic (sized proportionally by weight of word in topic).
 
 ### Plot a wordcloud for topic
 
@@ -243,7 +272,9 @@ dev.off()
 cloud(model, topic=j, scale=c(2,.25))
 ```
 
-This pretty clearly refers to "organizational learning". Notice that this code-block also saved a version of this figure in our "Output/rendering_artifacts" folder. It would also be helpful to look at prototypical documents for this topic
+This pretty clearly refers to "organizational learning".
+Notice that this code-block also saved a version of this figure in our "Output/rendering_artifacts" folder.
+It would also be helpful to look at prototypical documents for this topic
 
 ### Find prototype documents using function findThoughts(); we can show this with titles, but can also use the abstracts themselves.
 
@@ -266,10 +297,9 @@ plotQuote(thoughts_topic, width = 225, text.cex = .5, maxwidth = 1500)
 
 ```
 
-
 We can also just run the following code-block to generate word-clouds and sample titles as files for all of the topics in our topic model.
 
-### Generating rendering artifacts for all topics (in a loop)
+### Generating rendering artifacts for all topics and saving to file
 
 ```{r}
 for (j in 1:i){
@@ -289,16 +319,16 @@ for (j in 1:i){
 }
 ```
 
-
 ### Topic Proportions
 
 This is a helpful chart for us to see how certain topics are more dominant than others.
+This will print the topic \# and the three highest weighted words within each topic.
 
 ```{r}
 set.seed(02138)
 
 pdf(file =sprintf("Output/rendering_artifacts/expected_topic_proportions_K%s.pdf", i), width=20, height=20)
-print(plot(model, cex=.05)) # note: importance of wrapping it here, so PDF file isn't corrupted
+plot(model, cex=.05) # note: importance of wrapping it here, so PDF file isn't corrupted
 dev.off()
 
 # then replot for on-screen use in RStudio
@@ -306,17 +336,23 @@ plot(model, cex=.05)
 
 ```
 
-If we want this graph to be a bit nicer, we can insert our labels and then re-run it. Set the topic names to your relevant specification (fill in the custom labels here).
-
-To DO
+It makes sense for us to format this chart to be a bit nicer.
+We can insert our labels and then re-run it.
+Set the topic names to your relevant specification (fill in the custom labels here).
+This is where interpretive coding of topic meanings (labels) matters.
+These are just listed in order (from 1 to 45).
+It can be helpful to check the topic word clouds and the top documents per topic in coding these.
+It can also be extremely helpful to browse these topics using *stminsights*.
 
 ```{r}
-topic_names <- c("TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:", "TOPIC LABEL:")
+topic_names <- c("Topic 1: leadership", "Topic 2: marketing", "Topic 3: entrepreneurial teams", "Topic 4: organizational learning", "Topic 5: identity", "Topic 6: social capital", "Topic 7: firm environments", "Topic 8: international experience", "Topic 9: business cases", "Topic 10: work-life", "Topic 11: dynamic capabilities", "Topic 12: organizational research", "Topic 13: institutional complexity", "Topic 14: group dynamics", "Topic 15: knowledge & power", "Topic 16: diversity & categories", "Topic 17: strategy making", "Topic 18: integrative review", "Topic 19: performance measures", "Topic 20: control processes", "Topic 21: levels of analysis", "Topic 22: management frameworks", "Topic 23: political", "Topic 24: behaviors & outcomes", "Topic 25: time & change", "Topic 26: work design", "Topic 27: cross-cultural", "Topic 28: public policy", "Topic 29: research evidence", "Topic 30: constructs/variables")
 ```
 
 ### Prepare Topic correlations using function topicCorr()
 
-We can also see how certain topics are more or less correlated with one another in documents. Note the cutoff threshold parameter here. See manual for more details.
+We can also see how certain topics are more or less correlated with one another in documents.
+Note the cutoff threshold parameter here.
+See manual for more details.
 
 ```{r}
 set.seed(02138)
@@ -332,7 +368,8 @@ set.seed(02138)
 
 ### Covariate effects summary using function summary()
 
-Will print all topics. Can also set topic=i for more specific output.
+Will print all topics.
+Can also set topic=i for more specific output.
 
 ```{r}
 #summary(covariates_est) 
@@ -344,4 +381,3 @@ Will print all topics. Can also set topic=i for more specific output.
 # Model summary using function summary() 
 summary(model)
 ```
-
