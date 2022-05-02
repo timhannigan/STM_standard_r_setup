@@ -1,11 +1,13 @@
 ---
-title: 'IDeaS Standard Notebook for STM Rendering'
+title: "IDeaS Standard Notebook for STM Rendering"
 output:
-  pdf_document: default
+  html_document:
+    df_print: paged
   html_notebook: default
+  pdf_document: default
 editor_options:
   chunk_output_type: console
-  markdown: 
+  markdown:
     wrap: sentence
 ---
 
@@ -219,7 +221,7 @@ Be sure to run this in the R Console by copying and pasting "run_stminsights()".
 This will open up *stminsights* in your web-browser.
 
 ```{r}
-run_stminsights() # comment this out if you're using the Knit function
+#run_stminsights() # comment this out if you're using the Knit function
 
 ```
 
@@ -265,7 +267,7 @@ It also might be helpful to look at word clouds for each topic (sized proportion
 
 ### Plot a wordcloud for topic
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 # say we want to look for topic 4
 
 j <- 4
@@ -289,7 +291,7 @@ It would also be helpful to look at prototypical documents for this topic
 
 (Note, this duplicates the functionality in stminsights)
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 set.seed(02138)
 j <- 4
 findThoughts(model, texts = data$title, topics = c(j), n = 4)$docs[[1]] # for titles
@@ -310,7 +312,7 @@ We can also just run the following code-block to generate word-clouds and sample
 
 ### Generating rendering artifacts for all topics and saving to file
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 for (j in 1:i){
   set.seed(02138)
   thoughts_topic<- findThoughts(model, texts = data$title,
@@ -419,6 +421,6 @@ Because we've smoothed out the year covariate using spline function, we can see 
 
 # Plot covariate estimates using function plot() 
 
-plot(est_30, "year", method="continuous", topics=c(29, 18), xlim=c(1999,2021), xlab = "Year", labeltype = "custom", custom.labels = c("Topic 29 research evidence", "Topic 18 integrative review"))
+plot(est_30, "year", method="continuous", topics=c(29, 18), xlim=c(1999,2021), xlab = "Year", labeltype = "custom", custom.labels = c("Topic 29 weighing evidence", "Topic 18 integrative review"))
 
 ```
