@@ -16,7 +16,7 @@ editor_options:
 This notebook assumes that some basic pre-processing has been done already.
 The required input is a csv file entitled "corpus_processed_for_STM.csv".
 This is from a working paper by Gorgi Krlev, Tim Hannigan, and Andre Spicer (2022).
-This file contains abstracts (and meta-data) from papers published at the Academy of Management Annals and International Journal of Management Reviews between 2009 and 2021.
+This file contains abstracts (and meta-data) from papers published at the Academy of Management Annals and International Journal of Management Reviews between 1999 and 2021.
 
 The design of this notebook is to serve as a standard template to start a rendering process from.
 This code was inspired by Lindstedt (2019) and work by Tim Hannigan.
@@ -108,15 +108,22 @@ From Lindstedt (2019:311): "For shorter, focused corpora (i.e., those ranging fr
 This is also where we set which covariates we want in the model.
 Recall that the values for the covariates are setup in the source dataframe ahead of time (before using this notebook in R).
 
+Note: one of the compelling features of stm is the prevalence of covariates.
+It is important that we keep this consistent throughout.
+Also, note that we're using *s(year)* here.
+This is assigning a spline function to smooth out the variable.
+
 ```{r}
 set.seed(02138)
 start.time <- Sys.time()
 set.seed(02138)
 K_ <- c(10,15,20,25,30,35,40,45,50) # set the range here
 
-# also note the number of cores you have available on your machine and set it here as a parameter cores=10
+# also note the number of cores you have available on your machine and set it here as a parameter; cores=10 is a good default
 
-kResult <- searchK(out$documents, out$vocab, K = K_, prevalence =~ year + journal_code, init.type = "Spectral", data = out$meta, verbose=FALSE, cores=27)
+cores_on_my_machine = 10 
+
+kResult <- searchK(out$documents, out$vocab, K = K_, prevalence =~ s(year) + journal_code, init.type = "Spectral", data = out$meta, verbose=FALSE, cores=cores_on_my_machine)
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken # this will tell you how long this procedure took to run
@@ -139,7 +146,7 @@ dev.off()
 plot(kResult) 
 ```
 
-From this, it seems that 30, 40 and 45 might be good candidates.
+From this, it seems that 15, 30, or 45 might be good candidates.
 However, an increasingly common practice in the IDeaS community (and the social sciences) is looking at how two particular metrics are jointly maximized (semantic-coherence and exclusivity).
 
 #### Plot Semantic coherence-exclusivity plot using function plot()
@@ -190,14 +197,14 @@ We're going to use this tool to compare them in *stminsights*.
 i <- 30 # this is where we set the topic specification
 set.seed(02138)
 
-model_30 <- stm(out$documents, out$vocab, prevalence =~ year + journal_code, K = i, max.em.its = 150, data = out$meta, init.type = "Spectral", verbose=FALSE)
-est_30 <- estimateEffect(~year + journal_code, model_30, uncertainty = "None", metadata = out$meta) 
+model_30 <- stm(out$documents, out$vocab, prevalence =~ s(year) + journal_code, K = i, max.em.its = 150, data = out$meta, init.type = "Spectral", verbose=FALSE)
+est_30 <- estimateEffect(~s(year) + journal_code, model_30, uncertainty = "None", metadata = out$meta) 
 
 # repeat the above block of code for other promising candidate models
 i <- 45 # this is where we set the topic specification
 set.seed(02138)
 
-model_45 <- stm(out$documents, out$vocab, prevalence =~ year + journal_code, K = i, max.em.its = 150, data = out$meta, init.type = "Spectral", verbose=FALSE)
+model_45 <- stm(out$documents, out$vocab, prevalence =~ s(year) + journal_code, K = i, max.em.its = 150, data = out$meta, init.type = "Spectral", verbose=FALSE)
 est_45 <- estimateEffect(~year + journal_code, model_45, uncertainty = "None", metadata = out$meta) 
 
 
@@ -212,7 +219,7 @@ Be sure to run this in the R Console by copying and pasting "run_stminsights()".
 This will open up *stminsights* in your web-browser.
 
 ```{r}
-#run_stminsights()
+run_stminsights() # comment this out if you're using the Knit function
 
 ```
 
@@ -347,10 +354,10 @@ It can be helpful to check the topic word clouds and the top documents per topic
 It can also be extremely helpful to browse these topics using *stminsights*.
 
 ```{r}
-topic_names <- c("Topic 1 leadership:", "Topic 2 marketing:", "Topic 3 entrepreneurial teams:", "Topic 4 organizational learning:", "Topic 5 identity:", "Topic 6 social capital:", "Topic 7 firm environments:", "Topic 8 international experience:", "Topic 9 business cases:", "Topic 10 work-life:", "Topic 11 dynamic capabilities:", "Topic 12 organizational research:", "Topic 13 institutional complexity:", "Topic 14 group dynamics:", "Topic 15 knowledge & power:", "Topic 16 approaches in management:", "Topic 17 strategy making:", "Topic 18 integrative review:", "Topic 19 performance measures:", "Topic 20 control processes:", "Topic 21 levels of analysis:", "Topic 22 management frameworks:", "Topic 23 political:", "Topic 24 behaviors & outcomes:", "Topic 25 time & change:", "Topic 26 work design:", "Topic 27 cross-cultural:", "Topic 28 public policy:", "Topic 29 research evidence:", "Topic 30 constructs/variables:")
+topic_names <- c("Topic 1 leadership:", "Topic 2 marketing:", "Topic 3 entrepreneurial teams:", "Topic 4 organizational learning:", "Topic 5 identity:", "Topic 6 social capital:", "Topic 7 firm environments:", "Topic 8 international experience:", "Topic 9 business cases:", "Topic 10 work-life:", "Topic 11 dynamic capabilities:", "Topic 12 organizational goals:", "Topic 13 complexity:", "Topic 14 group dynamics:", "Topic 15 knowledge & power:", "Topic 16 approaches in management:", "Topic 17 strategy making:", "Topic 18 integrative review:", "Topic 19 performance measures:", "Topic 20 control processes:", "Topic 21 levels of analysis:", "Topic 22 management frameworks:", "Topic 23 political:", "Topic 24 behaviors & outcomes:", "Topic 25 time & change:", "Topic 26 work design:", "Topic 27 cross-cultural:", "Topic 28 public policy:", "Topic 29 weighing evidence:", "Topic 30 constructs/variables:")
 ```
 
-### Topic Proportions (using our labels)
+### Topic Proportions (now using our labels)
 
 Now we will generate the same chart, but with our labels included.
 
@@ -371,38 +378,47 @@ plot(model, type = "summary", labeltype = "frex", xlim = c(0,.35),
 
 ```
 
+### Topic Correlations
 
+Given that topic modeling assigns topic probabilities for each document, this leads us to consider how topics correlate.
+We can render topic correlations as a graph (where each bubble is a topic).
 
-### Prepare Topic correlations using function topicCorr()
-
-We can also see how certain topics are more or less correlated with one another in documents.
-Note the cutoff threshold parameter here.
-See manual for more details.
-
-```{r}
-set.seed(02138)
-mod.out.coor <- topicCorr(model, method = "simple" , cutoff = 0.01)
-```
-
-# Covariate effects using function estimateEffect()
+Note: this might get a bit messy with labels, so you can always revert back to just topic #'s.
+Also, cutoff is "the cutoff below which correlations are truncated to zero." If you increase this value, it only includes highly correlated topic as edges in the graph.
 
 ```{r}
 set.seed(02138)
-#covariates_est <- estimateEffect(~ s(year), model, uncertainty = "None", metadata = out$meta) 
+topic.correlations <- topicCorr(model, method = "simple" , cutoff = 0.01)
+plot(topic.correlations, vlabels = c(topic.names = topic_names), cex=0.01)
 ```
 
-### Covariate effects summary using function summary()
-
-Will print all topics.
-Can also set topic=i for more specific output.
+Let's clean up our labels by adding some line-breaks and then re-rendering.
 
 ```{r}
-#summary(covariates_est) 
+topic_names_with_line_breaks <- c("Topic 1\n leadership", "Topic 2\n marketing", "Topic 3\n entrepreneurial teams", "Topic 4\n organizational learning", "Topic 5\n identity", "Topic 6\n social capital", "Topic 7\n firm environments", "Topic 8\n international experience", "Topic 9\n business cases", "Topic 10\n work-life", "Topic 11\n dynamic capabilities", "Topic 12\n organizational goals", "Topic 13\n complexity", "Topic 14\n group dynamics", "Topic 15\n knowledge & power", "Topic 16\n approaches in management", "Topic 17\n strategy making", "Topic 18\n integrative review", "Topic 19\n performance measures", "Topic 20\n control processes", "Topic 21\n levels of analysis", "Topic 22\n management frameworks", "Topic 23\n political", "Topic 24\n behaviors & outcomes", "Topic 25\n time & change", "Topic 26\n work design", "Topic 27\n cross-cultural", "Topic 28\n public policy", "Topic 29\n weighing evidence", "Topic 30\n constructs/variables")
+
+# save to file
+pdf(file =sprintf("Output/rendering_artifacts/topic_correlations_K%s_with_labels.pdf", i), width=10, height=8)
+plot(topic.correlations, vlabels = c(topic.names = topic_names_with_line_breaks), cex=0.01)
+dev.off()
+
+#re-render on screen
+plot(topic.correlations, vlabels = c(topic.names = topic_names_with_line_breaks), cex=0.01)
+
 ```
 
-# Model Summary
+### Tracking Topic Prevalence Using Covariates - Date
+
+In addition to rendering our topic model, we also rendered an effects estimate using the covariates year and journal_code
+
+*est_30 \<- estimateEffect(\~s(year) + journal_code, model_30, uncertainty = "None", metadata = out\$meta)*
+
+Because we've smoothed out the year covariate using spline function, we can see roughly how this is prevalent along 10 portions of the range (1999-2021), rendered as a visual representation of topic prevalence.
 
 ```{r}
-# Model summary using function summary() 
-summary(model)
+
+# Plot covariate estimates using function plot() 
+
+plot(est_30, "year", method="continuous", topics=c(29, 18), xlim=c(1999,2021), xlab = "Year", labeltype = "custom", custom.labels = c("Topic 29 research evidence", "Topic 18 integrative review"))
+
 ```
