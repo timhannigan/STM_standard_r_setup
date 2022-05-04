@@ -28,14 +28,20 @@ This will be shown as part of the IDeaS workshop at University of British Columb
 
 This notebook is presuming these libraries have been installed.
 
-```{r setup, include=FALSE}
+```{r setup environment, include=FALSE}
+# Ensure that the RStudio environment is cleared so we're starting from scratch
+rm(list = ls())
+install.packages("devtools")
+devtools::install_github("cpsievert/LDAvis") 
+```
 
+Include libraries
+
+```{r}
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, root.dir = "../../")
 library(here)
 source("check_packages.R")
 
-# Ensure that the RStudio environment is cleared so we're starting from scratch
-rm(list = ls())
 ```
 
 ### PREPROCESSING
@@ -407,5 +413,15 @@ Because we've smoothed out the year covariate using spline function, we can see 
 # Plot covariate estimates using function plot() 
 
 plot(est_30, "year", method="continuous", topics=c(29, 18), xlim=c(1999,2021), xlab = "Year", labeltype = "custom", custom.labels = c("Topic 29 weighing evidence", "Topic 18 integrative review"))
+
+```
+
+### Inspection of model using LDAVis visualization tool
+
+You can also browse the topic model using this visualization tool
+
+```{r}
+set.seed(02138)
+toLDAvis(model, out$documents, 30, reorder.topics=FALSE, out.dir="Output/rendering_artifacts/ldavis/")     
 
 ```
