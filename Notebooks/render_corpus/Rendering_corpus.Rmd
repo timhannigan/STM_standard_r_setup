@@ -25,6 +25,7 @@ rm(list = ls())
 
 
 # helpful library for processing strings
+install.packages("stringr")
 library(stringr)
 
 ```
